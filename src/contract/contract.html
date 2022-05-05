@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"
+        type="application/javascript"></script>
+        
+</head>
+<body>
+    <button class="triggerProcessButton">Trigger Process</button> 
+
+    <button class="sendTokenButton">Send Token</button> 
+
+<script >
+    const triggerProcessButton = document.querySelector('.triggerProcessButton');
+    const sendTokenButton = document.querySelector('.sendTokenButton');
+    
+    const abi = [
+                // Read-Only Functions
+                "function balanceOf(address owner) view returns (uint256)",
+                "function decimals() view returns (uint8)",
+                "function symbol() view returns (string)",
+                "function name() public view returns (string)",
+
+                // Authenticated Functions
+                "function transfer(address to, uint amount) returns (bool)",
+
+                // Events
+                "event Transfer(address indexed from, address indexed to, uint amount)"
+        ];
+
+        const contractAddress = "0x2c8f4bCcD2a5923390a09546792b292CED6a7BF1"; // VEFA - ERC20 Token
+        const ownerOfVEFA = "0xd53fC851Ad158C141381b27E085B981A6aFcA2A4"; // dev note: test 5
+
+        const receiverAddress = "0x677F5b6e8806C7E85156da9c84825Fb1E9F46419"; // dev note: test 6
+
+    
+    
+    triggerProcessButton.addEventListener('click', async () => {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        const signer = await provider.getSigner();
+        
+        const erc20_readOnly = new ethers.Contract(contractAddress, abi, provider);
+        
+        console.log(`erc20_readOnly address ${erc20_readOnly.address} \n`);
+        console.log(`erc20_readOnly name ${await erc20_readOnly.name()} \n`);
+        console.log(`erc20_readOnly symbol ${await erc20_readOnly.symbol()} \n`);
+        console.log(`erc20_readOnly decimal ${await erc20_readOnly.decimals()}`);
+
+        const balance = await erc20_readOnly.balanceOf(signer.getAddress())
+        console.log(`Balance of sender ${signer.getAddress()} -->   ${ethers.utils.formatUnits(balance, "ether")} VEFA\n`)
+
+        let receiverBalance = await erc20_readOnly.balanceOf(receiverAddress);
+        console.log(`Balance of receiver ${receiverAddress} before transfer --> ${ethers.utils.formatEther(receiverBalance)} VEFA\n`)
+
+        
+    });
+    
+    sendTokenButton.addEventListener('click', async () => {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        const signer = await provider.getSigner();
+        
+        // const erc20_readOnly = new ethers.Contract(contractAddress, abi, provider);
+        const erc20_readWrite = new ethers.Contract(contractAddress, abi, signer);
+        
+        // erc20_readOnly ile hata aliriz, sadece read only calisabiliriz
+        // const tx = await erc20_readOnly.transfer(receiverAddress, ethers.utils.parseEther("10.0"))
+        const tx = await erc20_readWrite.transfer(receiverAddress, ethers.utils.parseEther("10.0"))
+        await tx.wait(); //Wait for the transaction to be mined
+
+        let receiverBalance = await erc20_readWrite.balanceOf(receiverAddress);
+        console.log(`Balance of receiver ${receiverAddress} after transfer --> ${ethers.utils.formatEther(receiverBalance)} VEFA\n`)
+
+    });
+</script>
+</body>
+</html>

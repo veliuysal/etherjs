@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"
+        type="application/javascript"></script>
+        
+</head>
+<body>
+    <button class="sendButton">Send</button> 
+    <button class="balanceButton">Balance</button> 
+
+<script >
+
+    const sendButton = document.querySelector('.sendButton');
+    const balanceButton = document.querySelector('.balanceButton');
+
+    const INFURA_ID = ''
+    const provider = new ethers.providers.JsonRpcProvider(`https://rinkeby.infura.io/v3/${INFURA_ID}`)
+
+    const receiverAddress = '0xd53fC851Ad158C141381b27E085B981A6aFcA2A4' // test 
+    const senderAddress = "0xe91a979BC2f519C8fcE71C7D4360f48aA86f64ef";
+    const contractAddress = "0x2c8f4bCcD2a5923390a09546792b292CED6a7BF1"; // VEFA - ERC20 Token
+
+    const abi = [
+            "function balanceOf(address owner) view returns (uint256)",
+            "function transfer(address to, uint amount) returns (bool)",
+        ];
+
+    const pk = "" // test 60 public
+    const wallet = new ethers.Wallet(pk);
+
+    const contract = new ethers.Contract(contractAddress, abi, provider);
+
+
+    sendButton.addEventListener('click', async () => {
+
+        let senderBalance = await contract.balanceOf(senderAddress)
+        console.log(`Balance of sender ${senderAddress} before transfer -->   ${ethers.utils.formatUnits(senderBalance, "ether")} VEFA\n`)
+
+        let receiverBalance = await contract.balanceOf(receiverAddress)
+        console.log(`Balance of receiver ${receiverAddress} before transfer --> ${ethers.utils.formatEther(receiverBalance)} VEFA\n`)
+
+
+        let iface = new ethers.utils.Interface(abi);
+        let encodedABI = iface.encodeFunctionData("transfer", [receiverAddress, ethers.utils.parseEther("1")]);
+        const tx = {
+          to: contractAddress,
+          chainId: (await provider.getNetwork()).chainId,
+          nonce: await provider.getTransactionCount(wallet.address, "latest"),
+          gasLimit: ethers.utils.hexlify(25000000000),
+          gasPrice: ethers.utils.hexlify(await provider.getGasPrice()),
+          data: encodedABI
+        };
+
+        provider.estimateGas(tx).then(async function(estimate){
+          tx.gasLimit = ethers.utils.hexlify(estimate) ;
+          tx.gasPrice = ethers.utils.hexlify(await provider.getGasPrice());
+          wallet.signTransaction(tx).then(async (signedTX)=>{
+                 provider.sendTransaction(signedTX).then(console.log);
+            });
+        }).catch(async data=>{
+          tx.gasLimit = ethers.utils.hexlify(3000000);
+          tx.gasPrice = ethers.utils.hexlify(await provider.getGasPrice());
+          wallet.signTransaction(tx).then(async (signedTX)=>{
+                 provider.sendTransaction(signedTX).then(console.log);
+            });
+        }).then(async ()=> {
+            console.log("Tx networke gonderildi")
+        })
+    });
+
+    balanceButton.addEventListener('click', async () => {
+        senderBalance = await contract.balanceOf(senderAddress)
+        console.log(`Balance of sender ${senderAddress} after transfer -->   ${ethers.utils.formatUnits(senderBalance, "ether")} VEFA\n`)
+
+        receiverBalance = await contract.balanceOf(receiverAddress)
+        console.log(`Balance of receiver ${receiverAddress} after transfer --> ${ethers.utils.formatEther(receiverBalance)} VEFA\n`)
+  
+    });
+    
+</script>
+</body>
+</html>

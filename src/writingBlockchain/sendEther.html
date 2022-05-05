@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"
+        type="application/javascript"></script>
+        
+</head>
+<body>
+    <button class="enableEthereumButton">start sending ether</button> 
+    <button class="getBalanceButton">get balance after transfer</button> 
+
+<script >
+
+    const sendEtherButton = document.querySelector('.enableEthereumButton');
+    const getBalanceButton = document.querySelector('.getBalanceButton');
+ 
+    const senderAddress = '0x92997436fED3D92c670a8460B3f72CC05a2ddDC3';
+    const receiverAddress = '0x1378F50026a9bd21436573DEA2E6Ba3FFCFe43fa';
+
+
+    sendEtherButton.addEventListener('click', async () => {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+
+        let receiverBalance = await provider.getBalance(receiverAddress)
+        console.log(`\nETH Balance of ${receiverAddress} before transfer --> ${ethers.utils.formatEther(receiverBalance)} ETH\n`)
+
+        const signer = provider.getSigner();
+        await signer.sendTransaction({
+            to: receiverAddress,
+            value: ethers.utils.parseEther("1.0")
+        });
+ 
+    });
+
+    getBalanceButton.addEventListener('click', async () => {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+
+        let receiverBalance = await provider.getBalance(receiverAddress)
+        console.log(`\nETH Balance of ${receiverAddress} after transfer --> ${ethers.utils.formatEther(receiverBalance)} ETH\n`)
+  
+    });
+    
+</script>
+</body>
+</html>
